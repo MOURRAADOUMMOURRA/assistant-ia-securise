@@ -7,6 +7,7 @@ local configuré.
 """
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
 import httpx
@@ -23,6 +24,7 @@ from rag.logging_setup import get_logger
 
 HTTP_NOT_FOUND = 404
 HTTP_BAD_REQUEST = 400
+STATUS_TIMEOUT_S = 2.0
 
 T = TypeVar("T")
 logger = get_logger(__name__)
@@ -122,6 +124,55 @@ class OllamaClient:
             if passthrough_think_errors and _is_think_rejection(error):
                 raise
             raise _translate_response_error(error, model) from error
+
+
+@dataclass(frozen=True)
+class OllamaStatus:
+    """État du serveur Ollama local : connexion et modèles manquants."""
+
+    connected: bool
+    missing_models: tuple[str, ...] = ()
+
+    @property
+    def ready(self) -> bool:
+        """Vrai si Ollama répond et que les deux modèles sont installés."""
+        return self.connected and not self.missing_models
+
+    @property
+    def message(self) -> str:
+        """Message court pour l'interface."""
+        if not self.connected:
+            return "Non connecté : lancez Ollama (icône près de l'horloge)."
+        if self.missing_models:
+            return f"Connecté, modèle(s) manquant(s) : {', '.join(self.missing_models)}."
+        return "Connecté, modèles prêts."
+
+
+def model_is_installed(wanted: str, installed: set[str]) -> bool:
+    """Indique si un modèle est installé (« bge-m3 » correspond à « bge-m3:latest »)."""
+    candidates = {wanted} if ":" in wanted else {wanted, f"{wanted}:latest"}
+    return not candidates.isdisjoint(installed)
+
+
+def fetch_installed_models(host: str) -> list[str]:
+    """Interroge l'Ollama local (sans proxy ni redirection) et liste ses modèles."""
+    with httpx.Client(timeout=STATUS_TIMEOUT_S, trust_env=False) as client:
+        response = client.get(f"{host}/api/tags")
+        response.raise_for_status()
+    return [model["name"] for model in response.json().get("models", [])]
+
+
+def check_ollama(
+    settings: Settings, fetch: Callable[[str], list[str]] | None = None
+) -> OllamaStatus:
+    """Vérifie qu'Ollama répond et que le LLM et le modèle d'embedding sont installés."""
+    try:
+        installed = set((fetch or fetch_installed_models)(settings.ollama_host))
+    except (httpx.HTTPError, OSError, ValueError):
+        return OllamaStatus(connected=False)
+    wanted = (settings.llm_model, settings.embed_model)
+    missing = tuple(name for name in wanted if not model_is_installed(name, installed))
+    return OllamaStatus(connected=True, missing_models=missing)
 
 
 def _is_think_rejection(error: ollama.ResponseError) -> bool:

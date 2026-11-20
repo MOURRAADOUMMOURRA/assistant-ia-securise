@@ -9,9 +9,12 @@ citées : une citation inventée n'apparaît donc jamais dans les sources.
 import re
 import time
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from functools import lru_cache
 
 from config import Settings, get_settings
+from rag.doubles import DOUBLE_EMBED_MODEL, DOUBLE_THRESHOLD, ExtractiveGenerator, HashEmbedder
+from rag.indexer import build_index
 from rag.llm import Generator, OllamaClient
 from rag.logging_setup import get_logger
 from rag.models import Answer, ScoredChunk, Source
@@ -97,12 +100,39 @@ def is_cited(answer_text: str, title: str, page_number: int) -> bool:
     return re.search(pattern, normalize_for_matching(answer_text)) is not None
 
 
+@dataclass(frozen=True)
+class AssistantRuntime:
+    """Assistant prêt à l'emploi : pipeline, index utilisé et mode de fonctionnement."""
+
+    pipeline: RagPipeline
+    store: VectorStore
+    test_double: bool
+
+
 def build_pipeline(settings: Settings) -> RagPipeline:
     """Construit le pipeline réel : Ollama local et index ChromaDB sur disque."""
-    client = OllamaClient(settings)
-    store = VectorStore(settings.index_dir, settings.embed_model)
-    retriever = Retriever(client, store, settings.top_k, settings.similarity_threshold)
-    return RagPipeline(retriever, client)
+    return create_runtime(settings, test_double=False).pipeline
+
+
+def create_runtime(settings: Settings, test_double: bool | None = None) -> AssistantRuntime:
+    """Construit l'assistant réel (Ollama) ou sa doublure locale (sans Ollama).
+
+    En mode doublure, l'index de la doublure est construit au premier appel s'il est
+    vide (quelques secondes pour le corpus de démonstration).
+    """
+    use_double = settings.test_double if test_double is None else test_double
+    if not use_double:
+        client = OllamaClient(settings)
+        store = VectorStore(settings.index_dir, settings.embed_model)
+        retriever = Retriever(client, store, settings.top_k, settings.similarity_threshold)
+        return AssistantRuntime(RagPipeline(retriever, client), store, test_double=False)
+    embedder = HashEmbedder()
+    store = VectorStore(settings.index_dir, DOUBLE_EMBED_MODEL)
+    if store.count() == 0:
+        logger.info("Mode doublure : construction de l'index de la doublure.")
+        build_index(settings.docs_dir, settings, embedder, store)
+    retriever = Retriever(embedder, store, settings.top_k, DOUBLE_THRESHOLD)
+    return AssistantRuntime(RagPipeline(retriever, ExtractiveGenerator()), store, test_double=True)
 
 
 @lru_cache(maxsize=1)

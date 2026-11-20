@@ -61,6 +61,11 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = "INFO"
 
+    test_double: bool = Field(
+        default=False,
+        description="Mode doublure : faux modèles locaux, pour tester l'interface sans Ollama.",
+    )
+
     @field_validator("docs_dir", "index_dir", "logs_dir")
     @classmethod
     def _resolve_from_root(cls, value: Path) -> Path:

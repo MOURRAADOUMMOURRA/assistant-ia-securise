@@ -22,6 +22,7 @@ from enum import Enum
 from pydantic import ValidationError
 
 from config import PROJECT_ROOT, Settings
+from rag.llm import model_is_installed
 
 SUPPORTED_PYTHON: tuple[tuple[int, int], ...] = ((3, 11), (3, 12))
 REQUIRED_MODULES: dict[str, str] = {
@@ -190,12 +191,6 @@ def check_models(wanted: Iterable[str], installed: Iterable[str]) -> CheckResult
         f"manquants : {', '.join(missing)}",
         "Lancez : ollama pull <modèle>, ou copiez le dossier .ollama\\models.",
     )
-
-
-def model_is_installed(wanted: str, installed: set[str]) -> bool:
-    """Indique si un modèle est installé (« bge-m3 » correspond à « bge-m3:latest »)."""
-    candidates = {wanted} if ":" in wanted else {wanted, f"{wanted}:latest"}
-    return not candidates.isdisjoint(installed)
 
 
 def fetch_ollama_models(host: str) -> list[str]:
