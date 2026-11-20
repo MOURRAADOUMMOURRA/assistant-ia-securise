@@ -189,6 +189,14 @@ Tu peux adapter cette structure si tu as une bonne raison. Explique-la avant et 
 - `rag/pipeline.py` expose `RagPipeline` (testable avec des doublures), `build_pipeline(settings)` et `ask(question)`.
 - `tests/fakes.py` (faux embedding « sac de mots », faux LLM) et `tests/pdf_factory.py` (fabrique de PDF de test).
 
+**Adaptations (phase 3) :**
+- `rag/textutils.py` : normalisation commune (casse, apostrophes, espaces), utilisée par le refus, les citations et le vérificateur.
+- `scripts/demo_corpus/grille.py` : modèle commun des grilles 2025 et 2026. `d13_grille_2025.py` et `d14_grille_2026.py` l'appellent avec les chiffres de leur année : rubriques identiques par construction.
+- `facts.ANSWER_KEYS` : 51 réponses attendues (50 questions et le piège 2025 « 24 % par an »), chacune avec un extrait exact à trouver une seule fois, à sa page. Le vérificateur signale aussi toute **fuite** : la réponse d'un document pas encore généré qui apparaît déjà ailleurs.
+- Dossier temporaire `data/tmp_corpus/` (ignoré par Git) pour le n° 13 pendant la phase 3.
+- Commandes : `python -m scripts.generate_demo_pdfs --only 10 14`, `python -m scripts.verify_demo_pdfs [--extra-dir DIR] [--self-test]`.
+- Les PDF de `demo_docs/` seront versionnés après validation : reportlab est une dépendance de développement, l'installation d'exécution doit donc trouver les PDF tout prêts.
+
 ---
 
 ## 6. Exigences techniques détaillées
@@ -377,6 +385,7 @@ Teste plusieurs configurations (taille des morceaux, top-k, seuil), en changeant
 | 2026-11-20 | 0. Diagnostic | premier commit (`docs:`) | Machine vérifiée (16 Go RAM, i5-7600, CPU seul, ≈ 300 Ko/s). Python 3.12.10 et Git 2.56.0 installés avec winget. Dépôt Git initialisé (branche `main`), `V2.md` créé. Ollama et les modèles restent à installer (phase 6, procédure hors ligne par clé USB conseillée) |
 | 2026-11-20 | 1. Socle | voir `git log` (`chore:`, `feat:`, `docs:`) | `.venv` (Python 3.12.10), dépendances épinglées (chromadb 1.5.9, streamlit 1.67.0, pymupdf 2.1, ollama 0.6.3…), `config.py` validé, journal avec masquage du mot de passe, `.streamlit/config.toml` (localhost, sans télémétrie, `showErrorDetails = "none"`), `scripts/check_env.py`. `ruff` OK, **37 tests verts**. `check_env` : tout OK sauf `.env` absent et Ollama absent (attendu) |
 | 2026-11-20 | 2. Moteur RAG | `16914e2` → `8798595` (un commit par module) | `rag/` complet : errors, models, ingestion (retrait en-têtes/pieds), chunking (jamais sur 2 pages), llm (client Ollama strict, repli `think`), vectorstore (Chroma cosinus, sans embedding interne), retrieval (top-k + seuil), prompts, pipeline (sources depuis les métadonnées, citations vérifiées), indexer. `check_env` bloque le mot de passe d'exemple ou < 12 caractères. VC++ Redistributable installé. `ruff` OK, **142 tests verts sans Ollama**. `python -m rag.indexer` sans Ollama : message clair, code 1 |
+| 2026-11-20 | 3. Corpus d'essai | `d554857` → `a5bcd4d` | Refus corrigé (réponse partielle conservée). `facts.py`, `render.py`, n° 10 (10 p.), grilles n° 13 et 14 (4 p.) ; remplissage 75 à 84 %. Vérificateur vert (n° 10, 13, 14). Auto-test : 3 erreurs injectées détectées, et aussi rubrique différente, fuite et page trop vide. Défaut du vérificateur trouvé par les tests et corrigé (« 18 400 » trouvé dans « 18 4000 »). **178 tests verts.** En attente : validation visuelle des 2 PDF par Mourra. `.env` toujours identique à `.env.example` |
 
 ---
 
