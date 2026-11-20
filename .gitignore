@@ -8,7 +8,9 @@ __pycache__/
 
 # Données générées localement
 data/index/
+data/tmp_corpus/
 logs/
+*.brouillon.pdf
 
 # Caches des outils
 .pytest_cache/
