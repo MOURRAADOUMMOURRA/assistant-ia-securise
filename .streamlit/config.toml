@@ -27,3 +27,12 @@ toolbarMode = "minimal"
 
 [global]
 developmentMode = false
+
+[theme]
+# Charte ZakiCortex : violet sur fond sombre. Police système (aucune police en ligne).
+base = "dark"
+primaryColor = "#8B5CF6"
+backgroundColor = "#0F0B1A"
+secondaryBackgroundColor = "#1A1430"
+textColor = "#EDE9FE"
+font = "sans serif"
