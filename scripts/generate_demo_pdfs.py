@@ -28,8 +28,11 @@ from scripts.demo_corpus import (
     d08_consignes_incendie,
     d09_note_horaires_ramadan,
     d10_octroi_credit,
+    d11_comite_credit_plafonds,
+    d12_credit_solidaire,
     d13_grille_2025,
     d14_grille_2026,
+    d15_recouvrement_impayes,
 )
 from scripts.demo_corpus.facts import DOCUMENTS
 from scripts.demo_corpus.render import Page, render_document
@@ -46,8 +49,11 @@ BUILDERS: dict[int, Callable[[], list[Page]]] = {
     8: d08_consignes_incendie.build_pages,
     9: d09_note_horaires_ramadan.build_pages,
     10: d10_octroi_credit.build_pages,
+    11: d11_comite_credit_plafonds.build_pages,
+    12: d12_credit_solidaire.build_pages,
     13: d13_grille_2025.build_pages,
     14: d14_grille_2026.build_pages,
+    15: d15_recouvrement_impayes.build_pages,
 }
 """Documents disponibles : numéro → fonction qui construit ses pages."""
 
