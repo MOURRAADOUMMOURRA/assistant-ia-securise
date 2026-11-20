@@ -46,6 +46,16 @@ INSTITUTION_CATEGORY = "établissement de microfinance de 2e catégorie"
 HEAD_OFFICE_CITY = "N'Djamena"
 FOOTER_TEXT = "Document fictif – démonstration ZakiCortex"
 
+AGENCIES: tuple[str, ...] = (
+    "Agence Centre (siège)",
+    "Agence Grand Marché",
+    "Agence Chagoua",
+    "Agence Farcha",
+    "Agence Moundou",
+    "Agence Abéché",
+)
+"""Les 6 agences : 4 à N'Djamena (dont le Grand Marché), 1 à Moundou, 1 à Abéché."""
+
 
 # --- Catalogue des 25 documents ------------------------------------------------
 
@@ -352,10 +362,10 @@ DOCUMENTS: dict[int, DocumentSpec] = {
             "Rapport annuel 2025",
             10,
             "1.0",
-            "15 mars 2026",
+            "15 avril 2026",
             "Direction financière",
             _CA,
-            "10 mars 2026",
+            "8 avril 2026",
         ),
         DocumentSpec(
             24,
