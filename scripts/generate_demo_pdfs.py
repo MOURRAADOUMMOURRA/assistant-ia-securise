@@ -39,6 +39,10 @@ from scripts.demo_corpus import (
     d19_procedures_caisse,
     d20_securite_agences,
     d21_reclamations_clients,
+    d22_organigramme_roles,
+    d23_rapport_annuel_2025,
+    d24_plan_continuite,
+    d25_protection_donnees,
 )
 from scripts.demo_corpus.facts import DOCUMENTS
 from scripts.demo_corpus.render import Page, render_document
@@ -66,6 +70,10 @@ BUILDERS: dict[int, Callable[[], list[Page]]] = {
     19: d19_procedures_caisse.build_pages,
     20: d20_securite_agences.build_pages,
     21: d21_reclamations_clients.build_pages,
+    22: d22_organigramme_roles.build_pages,
+    23: d23_rapport_annuel_2025.build_pages,
+    24: d24_plan_continuite.build_pages,
+    25: d25_protection_donnees.build_pages,
 }
 """Documents disponibles : numéro → fonction qui construit ses pages."""
 

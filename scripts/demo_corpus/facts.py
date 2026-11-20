@@ -395,6 +395,18 @@ DOCUMENTS: dict[int, DocumentSpec] = {
 }
 
 
+# --- Chiffres institutionnels (documents n° 22 et 23) ---------------------------
+
+STAFF_COUNT_2025 = 112
+"""Effectif salarié au 31 décembre 2025."""
+
+ACTIVE_CLIENTS_2025 = 18_400
+"""Clients actifs au 31 décembre 2025 (réponse du rapport annuel, page 2)."""
+
+PAR30_2025_PCT = 6.8
+"""Portefeuille à risque à 30 jours au 31 décembre 2025 (réponse, page 6)."""
+
+
 # --- Octroi de crédit (document n° 10) ----------------------------------------
 
 FIRST_LOAN_CAP_FCFA = 500_000
@@ -649,8 +661,10 @@ ANSWER_KEYS: tuple[AnswerKey, ...] = (
         "rattaché directement au Directeur général",
         "Rattachement du responsable conformité ?",
     ),
-    AnswerKey(23, "Q1", 2, "18 400", "Clients actifs fin 2025 ?"),
-    AnswerKey(23, "Q2", 6, "6,8 %", "Portefeuille à risque à 30 jours (PAR 30) fin 2025 ?"),
+    AnswerKey(23, "Q1", 2, fmt_int(ACTIVE_CLIENTS_2025), "Clients actifs fin 2025 ?"),
+    AnswerKey(
+        23, "Q2", 6, pct(PAR30_2025_PCT), "Portefeuille à risque à 30 jours (PAR 30) fin 2025 ?"
+    ),
     AnswerKey(24, "Q1", 3, "autonomie de 8 heures", "Autonomie du groupe électrogène ?"),
     AnswerKey(
         24,
