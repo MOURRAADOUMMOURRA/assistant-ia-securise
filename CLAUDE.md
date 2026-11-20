@@ -177,6 +177,12 @@ assistant-ia-securise/
 
 Tu peux adapter cette structure si tu as une bonne raison. Explique-la avant et mets cette section à jour.
 
+**Adaptations (phase 1) :**
+- `scripts/__init__.py` : `scripts` est un paquet, pour que ses modules importent `config` et soient testés. On les lance avec `-m` depuis la racine : `.venv\Scripts\python -m scripts.check_env`.
+- `tests/conftest.py` : fixtures partagées (environnement isolé, réglages qui ignorent le vrai `.env`).
+- Toutes les variables de `.env` sont préfixées par `ASSISTANT_` (ex. `ASSISTANT_TOP_K`). Ça évite le conflit avec la variable `OLLAMA_HOST` qu'Ollama utilise lui-même.
+- `config.py` refuse une adresse d'Ollama qui ne pointe pas vers la machine locale.
+
 ---
 
 ## 6. Exigences techniques détaillées
@@ -363,6 +369,7 @@ Teste plusieurs configurations (taille des morceaux, top-k, seuil), en changeant
 | Date | Phase | Commit | Résultat |
 |---|---|---|---|
 | 2026-11-20 | 0. Diagnostic | premier commit (`docs:`) | Machine vérifiée (16 Go RAM, i5-7600, CPU seul, ≈ 300 Ko/s). Python 3.12.10 et Git 2.56.0 installés avec winget. Dépôt Git initialisé (branche `main`), `V2.md` créé. Ollama et les modèles restent à installer (phase 6, procédure hors ligne par clé USB conseillée) |
+| 2026-11-20 | 1. Socle | voir `git log` (`chore:`, `feat:`, `docs:`) | `.venv` (Python 3.12.10), dépendances épinglées (chromadb 1.5.9, streamlit 1.67.0, pymupdf 2.1, ollama 0.6.3…), `config.py` validé, journal avec masquage du mot de passe, `.streamlit/config.toml` (localhost, sans télémétrie, `showErrorDetails = "none"`), `scripts/check_env.py`. `ruff` OK, **37 tests verts**. `check_env` : tout OK sauf `.env` absent et Ollama absent (attendu) |
 
 ---
 
