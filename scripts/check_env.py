@@ -35,6 +35,7 @@ REQUIRED_MODULES: dict[str, str] = {
 }
 MIN_RAM_GB = 8.0
 MIN_FREE_DISK_GB = 10.0
+MIN_PASSWORD_LENGTH = 12
 OLLAMA_TIMEOUT_S = 5.0
 GB = 1024**3
 ENV_EXAMPLE_PATH = PROJECT_ROOT / ".env.example"
@@ -47,7 +48,7 @@ class Status(Enum):
 
     OK = "OK"
     WARNING = "ATTENTION"
-    FAILED = "ECHEC"
+    FAILED = "ÉCHEC"
 
 
 @dataclass(frozen=True)
@@ -140,12 +141,20 @@ def check_env_file(settings: Settings, example_password: str | None) -> CheckRes
         return CheckResult(
             "Fichier .env", Status.FAILED, f"{PASSWORD_KEY} manquant", "Ajoutez-le dans .env."
         )
-    if settings.demo_password.get_secret_value() == example_password:
+    password = settings.demo_password.get_secret_value()
+    if password == example_password:
         return CheckResult(
             "Fichier .env",
-            Status.WARNING,
+            Status.FAILED,
             "mot de passe d'exemple encore utilisé",
             "Changez ASSISTANT_DEMO_PASSWORD dans .env avant la démo.",
+        )
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return CheckResult(
+            "Fichier .env",
+            Status.FAILED,
+            f"mot de passe trop court ({len(password)} caractères)",
+            f"Utilisez au moins {MIN_PASSWORD_LENGTH} caractères dans ASSISTANT_DEMO_PASSWORD.",
         )
     return CheckResult("Fichier .env", Status.OK, "présent, mot de passe personnalisé")
 

@@ -2,6 +2,8 @@
 
 import urllib.error
 
+import pytest
+
 from scripts import check_env
 from scripts.check_env import (
     GB,
@@ -81,20 +83,35 @@ def test_fichier_env_absent(tmp_path, monkeypatch, make_settings):
     assert check_env_file(make_settings(), "exemple").status is Status.WARNING
 
 
-def test_mot_de_passe_exemple_signale(tmp_path, monkeypatch, make_settings):
+@pytest.fixture
+def env_present(tmp_path, monkeypatch):
+    """Simule la présence d'un fichier .env."""
     env_path = tmp_path / ".env"
     env_path.write_text("", encoding="utf-8")
     monkeypatch.setattr(check_env, "ENV_PATH", env_path)
-    result = check_env_file(make_settings(demo_password="Xq7-demo-val"), "Xq7-demo-val")
-    assert result.status is Status.WARNING
-    assert "Xq7-demo-val" not in result.message
 
 
-def test_mot_de_passe_personnalise(tmp_path, monkeypatch, make_settings):
-    env_path = tmp_path / ".env"
-    env_path.write_text("", encoding="utf-8")
-    monkeypatch.setattr(check_env, "ENV_PATH", env_path)
-    assert check_env_file(make_settings(demo_password="perso"), "exemple").status is Status.OK
+@pytest.mark.usefixtures("env_present")
+def test_mot_de_passe_exemple_en_echec(make_settings):
+    exemple = check_env.read_example_password()
+    result = check_env_file(make_settings(demo_password=exemple), exemple)
+    assert result.status is Status.FAILED
+    assert exemple not in result.message
+
+
+@pytest.mark.usefixtures("env_present")
+@pytest.mark.parametrize("mot_de_passe", ["Zq7", "Kouri-2026", "Onze-carac!"])
+def test_mot_de_passe_trop_court_en_echec(make_settings, mot_de_passe):
+    result = check_env_file(make_settings(demo_password=mot_de_passe), "exemple")
+    assert result.status is Status.FAILED
+    assert "trop court" in result.message
+    assert mot_de_passe not in result.message
+
+
+@pytest.mark.usefixtures("env_present")
+def test_mot_de_passe_de_12_caracteres_accepte(make_settings):
+    result = check_env_file(make_settings(demo_password="Douze-carac!"), "exemple")
+    assert result.status is Status.OK
 
 
 def test_valeur_exemple_lue_dans_env_example():
@@ -104,5 +121,5 @@ def test_valeur_exemple_lue_dans_env_example():
 def test_mise_en_forme_avec_conseil():
     result = check_env.CheckResult("Ollama", Status.FAILED, "injoignable", "Lancez Ollama.")
     texte = format_result(result)
-    assert "[ECHEC" in texte
+    assert "[ÉCHEC" in texte
     assert "-> Lancez Ollama." in texte
