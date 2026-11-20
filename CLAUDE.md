@@ -94,7 +94,7 @@ Toute idée hors périmètre va dans `V2.md`. Tu me la signales, tu ne la codes 
 | winget | Présent (v1.12) |
 | Débit Internet | ≈ 300 Ko/s (mesure sur 1 Mo) |
 
-Python 3.12.10 et Git 2.56.0 ont été installés avec winget le 2026-11-20.
+Python 3.12.10 et Git 2.56.0 ont été installés avec winget le 2026-11-20, ainsi que le **Microsoft Visual C++ Redistributable 2015-2022 (x64)**, absent de la machine et indispensable à PyMuPDF (`DLL load failed` sinon). À installer aussi sur toute machine de démonstration : `winget install --id Microsoft.VCRedist.2015+.x64 -e`.
 
 **Contraintes pour la phase 6 (i5-7600, sans GPU) :**
 - Réponses courtes : limiter la longueur générée (`num_predict` modéré) et le demander dans le prompt.
@@ -182,6 +182,12 @@ Tu peux adapter cette structure si tu as une bonne raison. Explique-la avant et 
 - `tests/conftest.py` : fixtures partagées (environnement isolé, réglages qui ignorent le vrai `.env`).
 - Toutes les variables de `.env` sont préfixées par `ASSISTANT_` (ex. `ASSISTANT_TOP_K`). Ça évite le conflit avec la variable `OLLAMA_HOST` qu'Ollama utilise lui-même.
 - `config.py` refuse une adresse d'Ollama qui ne pointe pas vers la machine locale.
+
+**Adaptations (phase 2) :**
+- `rag/errors.py` : erreurs métier, chacune avec un `user_message` en français. L'interface affiche ce message, jamais une trace Python.
+- `rag/models.py` contient aussi `ScoredChunk` (morceau + similarité) et `DocumentSummary` (pour la liste des documents de l'interface).
+- `rag/pipeline.py` expose `RagPipeline` (testable avec des doublures), `build_pipeline(settings)` et `ask(question)`.
+- `tests/fakes.py` (faux embedding « sac de mots », faux LLM) et `tests/pdf_factory.py` (fabrique de PDF de test).
 
 ---
 
@@ -370,6 +376,7 @@ Teste plusieurs configurations (taille des morceaux, top-k, seuil), en changeant
 |---|---|---|---|
 | 2026-11-20 | 0. Diagnostic | premier commit (`docs:`) | Machine vérifiée (16 Go RAM, i5-7600, CPU seul, ≈ 300 Ko/s). Python 3.12.10 et Git 2.56.0 installés avec winget. Dépôt Git initialisé (branche `main`), `V2.md` créé. Ollama et les modèles restent à installer (phase 6, procédure hors ligne par clé USB conseillée) |
 | 2026-11-20 | 1. Socle | voir `git log` (`chore:`, `feat:`, `docs:`) | `.venv` (Python 3.12.10), dépendances épinglées (chromadb 1.5.9, streamlit 1.67.0, pymupdf 2.1, ollama 0.6.3…), `config.py` validé, journal avec masquage du mot de passe, `.streamlit/config.toml` (localhost, sans télémétrie, `showErrorDetails = "none"`), `scripts/check_env.py`. `ruff` OK, **37 tests verts**. `check_env` : tout OK sauf `.env` absent et Ollama absent (attendu) |
+| 2026-11-20 | 2. Moteur RAG | `16914e2` → `8798595` (un commit par module) | `rag/` complet : errors, models, ingestion (retrait en-têtes/pieds), chunking (jamais sur 2 pages), llm (client Ollama strict, repli `think`), vectorstore (Chroma cosinus, sans embedding interne), retrieval (top-k + seuil), prompts, pipeline (sources depuis les métadonnées, citations vérifiées), indexer. `check_env` bloque le mot de passe d'exemple ou < 12 caractères. VC++ Redistributable installé. `ruff` OK, **142 tests verts sans Ollama**. `python -m rag.indexer` sans Ollama : message clair, code 1 |
 
 ---
 
