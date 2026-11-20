@@ -25,10 +25,11 @@ PageRenderer = Callable[[Source], tuple[bytes | None, str]]
 def render_sidebar(
     overview: Sequence[DocumentSummary],
     status: OllamaStatus,
+    allow_mock: bool,
     double_forced: bool,
     on_logout: Callable[[], None],
 ) -> None:
-    """Barre latérale : logo, badge, état d'Ollama, mode doublure, documents."""
+    """Barre latérale : logo, badge, état d'Ollama, mode doublure (si autorisé), documents."""
     with st.sidebar:
         st.markdown(logo_html() + badge_html(), unsafe_allow_html=True)
         css_class = "zc-status-on" if status.ready else "zc-status-off"
@@ -38,7 +39,7 @@ def render_sidebar(
         )
         if double_forced:
             st.caption("Mode doublure imposé par le fichier .env (ASSISTANT_TEST_DOUBLE).")
-        elif not status.ready:
+        elif allow_mock:
             st.toggle(
                 "Mode doublure (test sans IA)",
                 key="doublure",

@@ -16,22 +16,18 @@ FAILS_KEY = "login_failures"
 LOCK_KEY = "login_locked_until"
 
 WRONG_PASSWORD = "Mot de passe incorrect. Vérifiez la saisie (majuscules, chiffres, symboles)."
-NOT_CONFIGURED = (
-    "Le mot de passe de démonstration n'est pas configuré. Ajoutez la ligne "
-    "ASSISTANT_DEMO_PASSWORD=… dans le fichier .env, puis relancez l'application."
-)
+NOT_CONFIGURED = "Mot de passe de démo non configuré – voir le README"
 
 logger = get_logger("app.auth")
 
 
-def password_configured(settings: Settings) -> bool:
-    """Indique si un mot de passe non vide est défini dans le .env."""
-    return settings.demo_password is not None and bool(settings.demo_password.get_secret_value())
-
-
 def verify_password(candidate: str, settings: Settings) -> bool:
-    """Compare le mot de passe saisi à celui du .env, en temps constant."""
-    if not password_configured(settings) or not candidate:
+    """Compare le mot de passe saisi à celui du .env, en temps constant.
+
+    Refuse toujours si le mot de passe du .env est absent, trop court ou égal à la
+    valeur d'exemple.
+    """
+    if not settings.demo_password_usable or not candidate:
         return False
     expected = settings.demo_password.get_secret_value().encode("utf-8")
     return hmac.compare_digest(candidate.encode("utf-8"), expected)
@@ -52,7 +48,8 @@ def render_login(settings: Settings) -> None:
     st.markdown(logo_html() + badge_html(), unsafe_allow_html=True)
     st.markdown("### Connexion")
     st.caption("Accès réservé au personnel. Saisissez le mot de passe de démonstration.")
-    if not password_configured(settings):
+    if not settings.demo_password_usable:
+        logger.warning("Connexion refusée : mot de passe de démo absent, trop court ou d'exemple.")
         st.error(NOT_CONFIGURED)
         return
     with st.form("login", clear_on_submit=True):

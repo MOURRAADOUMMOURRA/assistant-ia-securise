@@ -154,14 +154,18 @@ def main() -> None:
         return
 
     status = get_ollama_status(settings)
-    test_double = settings.test_double or bool(st.session_state.get("doublure"))
+    test_double = settings.mock_enabled or (
+        settings.allow_mock and bool(st.session_state.get("doublure"))
+    )
     try:
         runtime = get_runtime(settings, test_double)
     except AssistantError as error:
         st.error(error.user_message)
         return
     overview: list[DocumentSummary] = get_overview(runtime, str(settings.docs_dir), test_double)
-    components.render_sidebar(overview, status, settings.test_double, auth.logout)
+    components.render_sidebar(
+        overview, status, settings.allow_mock, settings.mock_enabled, auth.logout
+    )
 
     st.markdown(
         '<div class="zc-hero"><h1>Assistant IA interne sécurisé</h1>'
@@ -176,10 +180,14 @@ def main() -> None:
             unsafe_allow_html=True,
         )
     elif not status.ready:
+        hint = (
+            " Pour tester le parcours, activez le mode doublure dans la barre latérale."
+            if settings.allow_mock
+            else ""
+        )
         st.info(
             f"Ollama : {status.message} Les questions afficheront un message d'erreur "
-            "tant qu'Ollama n'est pas prêt. Pour tester le parcours, activez le mode "
-            "doublure dans la barre latérale."
+            f"tant qu'Ollama n'est pas prêt.{hint}"
         )
 
     renderer = make_renderer(settings)

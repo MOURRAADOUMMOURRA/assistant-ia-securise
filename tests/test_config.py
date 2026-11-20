@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from config import PROJECT_ROOT, Settings, get_settings
+from config import PROJECT_ROOT, Settings, get_settings, read_example_password
 
 
 def test_valeurs_par_defaut(make_settings):
@@ -78,6 +78,26 @@ def test_mot_de_passe_jamais_affiche(make_settings):
     assert "secret-de-test-123" not in repr(settings)
     assert "secret-de-test-123" not in str(settings.model_dump())
     assert settings.demo_password.get_secret_value() == "secret-de-test-123"
+
+
+@pytest.mark.parametrize(
+    ("valeur", "utilisable"),
+    [
+        (None, False),
+        ("", False),
+        ("Court-11car", False),
+        (read_example_password(), False),
+        ("Douze-carac!", True),
+    ],
+)
+def test_mot_de_passe_de_demo_utilisable(make_settings, valeur, utilisable):
+    assert make_settings(demo_password=valeur).demo_password_usable is utilisable
+
+
+def test_mode_doublure_exige_l_autorisation(make_settings):
+    assert not make_settings(test_double=True).mock_enabled
+    assert not make_settings(allow_mock=True).mock_enabled
+    assert make_settings(allow_mock=True, test_double=True).mock_enabled
 
 
 def test_get_settings_renvoie_toujours_le_meme_objet():

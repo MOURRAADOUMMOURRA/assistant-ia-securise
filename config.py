@@ -23,6 +23,22 @@ LOCAL_HOSTS: frozenset[str] = frozenset({"localhost", "127.0.0.1", "::1"})
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
 
+MIN_PASSWORD_LENGTH = 12
+"""Longueur minimale du mot de passe de démonstration."""
+
+ENV_EXAMPLE_PATH: Path = PROJECT_ROOT / ".env.example"
+PASSWORD_KEY = "ASSISTANT_DEMO_PASSWORD"
+
+
+def read_example_password(path: Path = ENV_EXAMPLE_PATH) -> str | None:
+    """Lit la valeur d'exemple du mot de passe dans .env.example."""
+    if not path.exists():
+        return None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(f"{PASSWORD_KEY}="):
+            return line.split("=", 1)[1].strip()
+    return None
+
 
 class Settings(BaseSettings):
     """Ensemble des réglages de l'assistant, validés au chargement."""
@@ -65,6 +81,23 @@ class Settings(BaseSettings):
         default=False,
         description="Mode doublure : faux modèles locaux, pour tester l'interface sans Ollama.",
     )
+    allow_mock: bool = Field(
+        default=False,
+        description="Autorise le mode doublure (masqué et inactif sinon).",
+    )
+
+    @property
+    def demo_password_usable(self) -> bool:
+        """Vrai si le mot de passe de démo est défini, assez long et différent de l'exemple."""
+        if self.demo_password is None:
+            return False
+        value = self.demo_password.get_secret_value()
+        return len(value) >= MIN_PASSWORD_LENGTH and value != read_example_password()
+
+    @property
+    def mock_enabled(self) -> bool:
+        """Vrai si le mode doublure est autorisé et imposé par le .env."""
+        return self.allow_mock and self.test_double
 
     @field_validator("docs_dir", "index_dir", "logs_dir")
     @classmethod

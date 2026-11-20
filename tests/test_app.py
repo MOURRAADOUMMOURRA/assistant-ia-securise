@@ -7,7 +7,7 @@ import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from app.auth import NOT_CONFIGURED, WRONG_PASSWORD, verify_password
-from config import PROJECT_ROOT, get_settings
+from config import PROJECT_ROOT, get_settings, read_example_password
 from rag.doubles import DOUBLE_ANSWER_PREFIX
 from tests.pdf_factory import write_pdf
 
@@ -34,6 +34,8 @@ def app_env(tmp_path, monkeypatch):
     monkeypatch.setenv("ASSISTANT_INDEX_DIR", str(tmp_path / "index"))
     monkeypatch.setenv("ASSISTANT_LOGS_DIR", str(tmp_path / "logs"))
     monkeypatch.setenv("ASSISTANT_OLLAMA_HOST", "http://127.0.0.1:9")
+    monkeypatch.setenv("ASSISTANT_ALLOW_MOCK", "false")
+    monkeypatch.setenv("ASSISTANT_TEST_DOUBLE", "false")
     _reset_caches()
     yield
     _reset_caches()
@@ -67,6 +69,42 @@ def test_verification_du_mot_de_passe(make_settings):
     assert not verify_password("", make_settings(demo_password=""))
 
 
+def test_mot_de_passe_court_ou_d_exemple_toujours_refuse(make_settings):
+    exemple = read_example_password()
+    assert not verify_password(exemple, make_settings(demo_password=exemple))
+    assert not verify_password("Court-11car", make_settings(demo_password="Court-11car"))
+
+
+@pytest.mark.usefixtures("app_env")
+@pytest.mark.parametrize("mot_de_passe", ["exemple", "Court-11car"])
+def test_connexion_bloquee_si_mot_de_passe_exemple_ou_court(monkeypatch, mot_de_passe):
+    valeur = read_example_password() if mot_de_passe == "exemple" else mot_de_passe
+    monkeypatch.setenv("ASSISTANT_DEMO_PASSWORD", valeur)
+    get_settings.cache_clear()
+    at = AppTest.from_file(APP, default_timeout=TIMEOUT).run()
+    assert not at.exception
+    assert [e.value for e in at.error] == ["Mot de passe de démo non configuré – voir le README"]
+    assert not at.text_input
+    assert not any(b.label == "Se connecter" for b in at.button)
+
+
+@pytest.mark.usefixtures("app_env")
+def test_mode_doublure_masque_par_defaut():
+    at = _login(AppTest.from_file(APP, default_timeout=TIMEOUT).run())
+    assert not at.exception
+    assert not at.toggle
+    assert "doublure" not in _all_text(at).lower()
+
+
+@pytest.mark.usefixtures("app_env")
+def test_mode_doublure_impose_sans_autorisation_ignore(monkeypatch):
+    monkeypatch.setenv("ASSISTANT_TEST_DOUBLE", "true")
+    get_settings.cache_clear()
+    at = _login(AppTest.from_file(APP, default_timeout=TIMEOUT).run())
+    assert not at.toggle
+    assert "doublure" not in _all_text(at).lower()
+
+
 @pytest.mark.usefixtures("app_env")
 def test_ecran_de_connexion_puis_mot_de_passe_faux():
     at = AppTest.from_file(APP, default_timeout=TIMEOUT).run()
@@ -89,17 +127,18 @@ def test_mot_de_passe_non_configure(monkeypatch):
 def test_sans_ollama_message_clair_et_erreur_lisible():
     at = _login(AppTest.from_file(APP, default_timeout=TIMEOUT).run())
     assert not at.exception
-    texte = _all_text(at)
-    assert "Non connecté" in texte
-    assert "mode doublure" in texte.lower()
+    assert "Non connecté" in _all_text(at)
     at.chat_input[0].set_value("Quel est le plafond d'un premier crédit ?").run()
     assert not at.exception
     assert any("Ollama" in e.value for e in at.error)
 
 
 @pytest.mark.usefixtures("app_env")
-def test_parcours_complet_en_mode_doublure():
+def test_parcours_complet_en_mode_doublure(monkeypatch):
+    monkeypatch.setenv("ASSISTANT_ALLOW_MOCK", "true")
+    get_settings.cache_clear()
     at = _login(AppTest.from_file(APP, default_timeout=TIMEOUT).run())
+    assert "mode doublure" in _all_text(at).lower()
     at.toggle(key="doublure").set_value(True).run()
     assert not at.exception
     at.button(key="exemple_0").click().run()

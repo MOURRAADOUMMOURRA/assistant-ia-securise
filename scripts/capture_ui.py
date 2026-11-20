@@ -145,7 +145,12 @@ def wait_http(url: str, timeout: float = 90.0) -> object:
 
 def start_app(password: str) -> subprocess.Popen:
     """Lance Streamlit sur le port de test, sans le mode doublure imposé."""
-    env = {**os.environ, "ASSISTANT_DEMO_PASSWORD": password, "ASSISTANT_TEST_DOUBLE": "false"}
+    env = {
+        **os.environ,
+        "ASSISTANT_DEMO_PASSWORD": password,
+        "ASSISTANT_ALLOW_MOCK": "true",
+        "ASSISTANT_TEST_DOUBLE": "false",
+    }
     command = [
         sys.executable,
         "-m",

@@ -21,7 +21,13 @@ from enum import Enum
 
 from pydantic import ValidationError
 
-from config import PROJECT_ROOT, Settings
+from config import (
+    MIN_PASSWORD_LENGTH,
+    PASSWORD_KEY,
+    PROJECT_ROOT,
+    Settings,
+    read_example_password,
+)
 from rag.llm import model_is_installed
 
 SUPPORTED_PYTHON: tuple[tuple[int, int], ...] = ((3, 11), (3, 12))
@@ -36,12 +42,9 @@ REQUIRED_MODULES: dict[str, str] = {
 }
 MIN_RAM_GB = 8.0
 MIN_FREE_DISK_GB = 10.0
-MIN_PASSWORD_LENGTH = 12
 OLLAMA_TIMEOUT_S = 5.0
 GB = 1024**3
-ENV_EXAMPLE_PATH = PROJECT_ROOT / ".env.example"
 ENV_PATH = PROJECT_ROOT / ".env"
-PASSWORD_KEY = "ASSISTANT_DEMO_PASSWORD"
 
 
 class Status(Enum):
@@ -198,16 +201,6 @@ def fetch_ollama_models(host: str) -> list[str]:
     with urllib.request.urlopen(f"{host}/api/tags", timeout=OLLAMA_TIMEOUT_S) as response:
         payload = json.loads(response.read().decode("utf-8"))
     return [model["name"] for model in payload.get("models", [])]
-
-
-def read_example_password() -> str | None:
-    """Lit la valeur d'exemple du mot de passe dans .env.example."""
-    if not ENV_EXAMPLE_PATH.exists():
-        return None
-    for line in ENV_EXAMPLE_PATH.read_text(encoding="utf-8").splitlines():
-        if line.startswith(f"{PASSWORD_KEY}="):
-            return line.split("=", 1)[1].strip()
-    return None
 
 
 def run_checks() -> list[CheckResult]:
