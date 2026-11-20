@@ -17,12 +17,10 @@ from rag.logging_setup import get_logger
 from rag.models import Answer, ScoredChunk, Source
 from rag.prompts import REFUSAL_MESSAGE, SYSTEM_PROMPT, build_user_prompt, is_refusal
 from rag.retrieval import Retriever
+from rag.textutils import normalize_for_matching
 from rag.vectorstore import VectorStore
 
 EMPTY_QUESTION_MESSAGE = "Posez une question sur les documents internes."
-
-_APOSTROPHES = str.maketrans({"’": "'", "‘": "'", "`": "'"})
-_SPACES = re.compile(r"\s+")
 
 logger = get_logger(__name__)
 
@@ -95,8 +93,8 @@ def build_sources(answer_text: str, hits: Sequence[ScoredChunk]) -> tuple[Source
 
 def is_cited(answer_text: str, title: str, page_number: int) -> bool:
     """Indique si la réponse cite « Titre, page N » (casse, espaces et apostrophes ignorés)."""
-    pattern = re.escape(_normalize(title)) + rf"\W{{0,5}}(?:page|p\.)\s*{page_number}\b"
-    return re.search(pattern, _normalize(answer_text)) is not None
+    pattern = re.escape(normalize_for_matching(title)) + rf"\W{{0,5}}(?:page|p\.)\s*{page_number}\b"
+    return re.search(pattern, normalize_for_matching(answer_text)) is not None
 
 
 def build_pipeline(settings: Settings) -> RagPipeline:
@@ -116,11 +114,6 @@ def default_pipeline() -> RagPipeline:
 def ask(question: str) -> Answer:
     """Point d'entrée unique : répond à une question avec le pipeline par défaut."""
     return default_pipeline().ask(question)
-
-
-def _normalize(text: str) -> str:
-    """Minuscules, apostrophes droites et espaces simples, pour comparer des citations."""
-    return _SPACES.sub(" ", text.translate(_APOSTROPHES)).casefold()
 
 
 def _log_answer(answer: Answer, llm_called: bool) -> None:

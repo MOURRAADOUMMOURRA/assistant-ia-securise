@@ -74,6 +74,26 @@ def test_refus_du_llm_sans_sources(store):
     assert answer.sources == ()
 
 
+def test_reponse_partielle_conservee_avec_ses_sources(store):
+    reply = (
+        f"Le plafond du premier crédit est de 500 000 FCFA (Source : {OCTROI}, page 4). "
+        "Je ne trouve pas cette information dans les documents disponibles pour la durée."
+    )
+    pipeline, _ = _pipeline(store, reply)
+    answer = pipeline.ask("Plafond et durée du premier crédit ?")
+    assert not answer.refused
+    assert answer.text == reply
+    assert [s.label for s in answer.cited_sources] == [f"{OCTROI}, page 4"]
+
+
+def test_refus_entre_guillemets_traite_comme_refus(store):
+    pipeline, _ = _pipeline(store, f"« {REFUSAL_MESSAGE} »")
+    answer = pipeline.ask("plafond du premier crédit")
+    assert answer.refused
+    assert answer.text == REFUSAL_MESSAGE
+    assert answer.sources == ()
+
+
 def test_citation_inventee_jamais_dans_les_sources(store):
     pipeline, _ = _pipeline(store, "500 000 FCFA (Source : Manuel secret, page 9).")
     answer = pipeline.ask("plafond du premier crédit")

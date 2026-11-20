@@ -1,5 +1,7 @@
 """Tests des consignes et de la mise en forme des extraits (rag/prompts.py)."""
 
+import pytest
+
 from rag.models import ScoredChunk
 from rag.prompts import (
     REFUSAL_MESSAGE,
@@ -47,7 +49,30 @@ def test_prompt_utilisateur_contient_extraits_et_question():
     assert prompt.endswith("Question : Quel est le taux AGR ?")
 
 
-def test_detection_du_refus():
-    assert is_refusal(REFUSAL_MESSAGE)
-    assert is_refusal("je ne trouve pas cette information dans les documents disponibles")
-    assert not is_refusal("Le plafond est de 500 000 FCFA (Source : Octroi, page 4).")
+@pytest.mark.parametrize(
+    "texte",
+    [
+        REFUSAL_MESSAGE,
+        "je ne trouve pas cette information dans les documents disponibles",
+        "  « Je ne trouve pas cette information dans les documents disponibles. »  ",
+        "**Je ne trouve pas cette information dans les documents disponibles.**",
+        "Je ne trouve pas cette information dans les documents\ndisponibles !",
+    ],
+)
+def test_refus_pur_reconnu(texte):
+    assert is_refusal(texte)
+
+
+@pytest.mark.parametrize(
+    "texte",
+    [
+        "Le plafond est de 500 000 FCFA (Source : Octroi, page 4).",
+        "Le plafond est de 500 000 FCFA (Source : Octroi, page 4). "
+        "Je ne trouve pas cette information dans les documents disponibles pour la durée.",
+        "Je ne trouve pas cette information dans les documents disponibles. "
+        "En revanche, le plafond est de 500 000 FCFA (Source : Octroi, page 4).",
+        "Je ne trouve pas le taux immobilier, mais le taux AGR est de 21 % par an.",
+    ],
+)
+def test_reponse_partielle_ou_normale_non_refusee(texte):
+    assert not is_refusal(texte)

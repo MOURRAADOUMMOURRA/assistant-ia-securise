@@ -1,11 +1,17 @@
 """Consignes envoyées au LLM et mise en forme des extraits « [Titre, page N] »."""
 
+import re
 from collections.abc import Sequence
 
 from rag.models import ScoredChunk
+from rag.textutils import normalize_for_matching
 
 REFUSAL_MESSAGE = "Je ne trouve pas cette information dans les documents disponibles."
 """Phrase exacte de refus, utilisée par le LLM et par le pipeline."""
+
+_REFUSAL_CORE = normalize_for_matching(REFUSAL_MESSAGE).rstrip(".")
+_REFUSAL_PADDING = " «»\"'*-–—:"
+_WORD = re.compile(r"\w")
 
 EXCERPT_SEPARATOR = "\n\n---\n\n"
 
@@ -34,5 +40,13 @@ def build_user_prompt(question: str, hits: Sequence[ScoredChunk]) -> str:
 
 
 def is_refusal(text: str) -> bool:
-    """Indique si la réponse du LLM est le refus prévu."""
-    return REFUSAL_MESSAGE.casefold().rstrip(".") in text.casefold()
+    """Indique si la réponse est essentiellement la phrase de refus, sans autre information.
+
+    Après normalisation, la réponse doit commencer par la phrase de refus et ne rien
+    contenir d'autre que de la ponctuation. Une réponse partielle (« X vaut 5 %…, je ne
+    trouve pas l'information sur Y ») n'est donc pas un refus.
+    """
+    normalized = normalize_for_matching(text).lstrip(_REFUSAL_PADDING)
+    if not normalized.startswith(_REFUSAL_CORE):
+        return False
+    return _WORD.search(normalized[len(_REFUSAL_CORE) :]) is None
