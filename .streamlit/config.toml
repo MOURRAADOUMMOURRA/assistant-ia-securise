@@ -1,0 +1,29 @@
+# Configuration Streamlit : interface accessible depuis ce PC uniquement,
+# aucune télémétrie, aucune requête vers Internet au démarrage.
+
+[server]
+# N'écoute que sur la machine locale : aucun autre PC du réseau ne peut se connecter.
+address = "localhost"
+port = 8501
+# Mode sans interaction : pas de demande d'e-mail au premier lancement.
+headless = true
+enableXsrfProtection = true
+runOnSave = false
+
+[browser]
+# Adresse affichée au démarrage. Fixée à localhost, elle évite la détection
+# de l'adresse IP publique (qui contacterait un service externe).
+serverAddress = "localhost"
+serverPort = 8501
+# Aucune statistique d'utilisation envoyée à Streamlit.
+gatherUsageStats = false
+
+[client]
+# Jamais de trace Python brute affichée à l'utilisateur : message générique dans
+# le navigateur, détails dans la console uniquement. (La valeur false est
+# obsolète et afficherait la trace complète.)
+showErrorDetails = "none"
+toolbarMode = "minimal"
+
+[global]
+developmentMode = false

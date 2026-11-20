@@ -1,0 +1,42 @@
+[project]
+name = "assistant-ia-securise"
+version = "0.1.0"
+description = "Assistant IA interne sécurisé (RAG 100 % local) — démonstration ZakiCortex"
+requires-python = ">=3.11,<3.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "data", "logs"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # erreurs de style (pycodestyle)
+    "W",    # avertissements de style
+    "F",    # erreurs logiques (pyflakes) : imports inutilisés, variables non définies…
+    "I",    # ordre des imports
+    "B",    # pièges courants (bugbear)
+    "UP",   # syntaxe Python moderne
+    "N",    # conventions de nommage
+    "SIM",  # simplifications
+    "RUF",  # règles propres à ruff
+    "T20",  # interdiction de print (levée pour scripts/ ci-dessous)
+    "ANN",  # annotations de type obligatoires
+    "FIX",  # interdiction des TODO / FIXME
+    "ERA",  # interdiction du code commenté
+]
+# RUF001-003 : la typographie française (apostrophes courbes, tirets, espaces insécables)
+# est volontaire dans les textes et ne doit pas être signalée comme ambiguë.
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/**" = ["T20"]
+"tests/**" = ["ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

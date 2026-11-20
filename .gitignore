@@ -1,0 +1,23 @@
+# Environnement Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets : le vrai fichier .env ne doit JAMAIS être publié
+.env
+
+# Données générées localement
+data/index/
+logs/
+
+# Caches des outils
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Éditeurs et système
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
